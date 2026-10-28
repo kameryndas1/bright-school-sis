@@ -2,44 +2,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bright School SIS</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f7fc;
-      color: #173b70;
-    }
-    header {
-      background: #173b70;
-      color: white;
-      padding: 22px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    main {
-      padding: 40px 24px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    .card {
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px #00000012;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport"
+ content="width=device-width,initial-scale=1">
+<title>Bright School SIS</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;
+background:#f3f6fb;color:#233247}
+header{background:#15396d;color:white;padding:17px 22px;
+display:flex;justify-content:space-between;align-items:center}
+.brand{font-size:21px;font-weight:bold}
+.layout{display:flex;min-height:calc(100vh - 66px)}
+aside{width:225px;background:#fff;border-right:1px solid #ddd;
+padding:15px;flex-shrink:0}
+aside h4{font-size:12px;color:#7b8797;text-transform:uppercase}
+nav button{display:block;width:100%;border:0;background:none;
+padding:12px;text-align:left;cursor:pointer;border-radius:7px;
+color:#334155;font-size:14px;margin:3px 0}
+nav button:hover,nav button.active{background:#e8f0ff;
+color:#164581;font-weight:bold}
+main{flex:1;padding:28px;min-width:0}
+h1{font-size:26px;margin:0 0 7px}
+.subtitle{color:#64748b;margin-bottom:24px}
+.cards{display:grid;grid-template-columns:
+repeat(auto-fit,minmax(160px,1fr));gap:15px}
+.card,.panel{background:white;border-radius:10px;
+padding:20px;box-shadow:0 2px 8px #162f5010}
+.card small{color:#64748b}
+.card h2{font-size:29px;margin:10px 0 0;color:#173b70}
+.panel{margin-top:20px}
+.panel h3{margin-top:0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:12px;border-bottom:1px solid #e5eaf1}
+th{color:#64748b;background:#f8fafc}
+input{width:100%;max-width:350px;padding:11px;
+border:1px solid #cbd5e1;border-radius:7px;margin-bottom:15px}
+.tag{background:#e8f7ee;color:#18743b;
+padding:5px 9px;border-radius:15px;font-size:12px}
+.hidden{display:none}
+.notice{background:#fff7dc;padding:12px;border-radius:8px;
+font-size:13px;margin-top:16px}
+@media(max-width:650px){
+.layout{display:block}
+aside{width:100%;border-right:0;border-bottom:1px solid #ddd}
+nav{display:flex;overflow-x:auto;gap:5px}
+nav button{white-space:nowrap;width:auto}
+main{padding:16px}
+.panel{overflow-x:auto}
+}
+</style>
 </head>
 <body>
-  <header>Bright School SIS</header>
-  <main>
-    <div class="card">
-      <h1>Welcome to Valadia Academy</h1>
-      <p>School Administration Dashboard</p>
-      <p>Your SIS website foundation is ready.</p>
-    </div>
-  </main>
+<header>
+  <div class="brand">🎓 Bright School SIS</div>
+  <div>Valadia Academy</div>
+</header>
+
+<div class="layout">
+<aside>
+<h4>School Management</h4>
+<nav id="navigation">
+<button class="active" data-page="dashboard">▦ Dashboard</button>
+<button data-page="students">♙ Students</button>
+<button data-page="staff">♙ Staff</button>
+<button data-page="grades">▤ Gradebook</button>
+<button data-page="attendance">☑ Attendance</button>
+<button data-page="scheduling">▦ Scheduling</button>
+<button data-page="reports">▥ Reports</button>
+<button data-page="settings">⚙ Settings</button>
+</nav>
+</aside>
+
+<main>
+<section id="dashboard">
+<h1>Administrator Dashboard</h1>
+<p class="subtitle">2026–2027 Academic Year</p>
+<div class="cards">
+<div class="card"><small>Students (Demo)</small><h2>20</h2></div>
+<div class="card"><small>Teachers (Demo)</small><h2>3</h2></div>
+<div class="card"><small>Attendance (Demo)</small><h2>95%</h2></div>
+<div class="card"><small>Class Sections (Demo)</small><h2>12</h2></div>
+</div>
+<div class="panel">
+<h3>School Overview</h3>
+<p><b>School:</b> Valadia Academy</p>
+<p><b>Mascot:</b> Valkyries</p>
+<p><b>Grade Level:</b> Grade 5</p>
+<p><b>Programs:</b> Primary, Standard, Advanced</p>
+<p><b>Academic Year:</b> 2026–2027</p>
+</div>
+<div class="panel">
+<h3>Quick Access</h3>
+<p>Select a module from the sidebar to begin.</p>
+</div>
+</section>
+
+<section id="students" class="hidden">
+<h1>Student Management</h1>
+<p class="subtitle">Search and manage student profiles.</p>
+<div class="panel">
+<input id="search" placeholder="Search students...">
+<table>
+<thead><tr><th>Student</th><th>Student ID</th>
+<th>Program</th><th>Status</th></tr></thead>
+<tbody id="studentRows"></tbody>
+</table>
+</div>
+</section>
+
+<section id="staff" class="hidden">
+<h1>Staff Directory</h1>
+<div class="panel">
+<h3>Staff Management</h3>
+<p>Teacher profiles and assignments will be added here.</p>
+</div>
+</section>
+
+<section id="grades" class="hidden">
+<h1>Gradebook</h1>
+<div class="panel">
+<h3>Teacher Gradebook</h3>
+<p>Assignment grids, grading periods, and score entry will be built here.</p>
+</div>
+</section>
+
+<section id="attendance" class="hidden">
+<h1>Attendance</h1>
+<div class="panel">
+<h3>Attendance Management</h3>
+<p>Daily and class-period attendance will appear here.</p>
+</div>
+</section>
+
+<section id="scheduling" class="hidden">
+<h1>Scheduling</h1>
+<div class="panel">
+<h3>Class Scheduling</h3>
+<p>Subjects, class sections, and teacher assignments will appear here.</p>
+</div>
+</section>
+
+<section id="reports" class="hidden">
+<h1>Reports</h1>
+<div class="panel">
+<h3>School Reports</h3>
+<p>Academic, attendance, and enrollment reports will appear here.</p>
+</div>
+</section>
+
+<section id="settings" class="hidden">
+<h1>School Settings</h1>
+<div class="panel">
+<h3>Valadia Academy</h3>
+<p>School configuration and academic settings will appear here.</p>
+</div>
+</section>
+
+<div class="notice">
+DEMO MODE — No Supabase connection or real student data.
+Do not enter private student information.
+</div>
+</main>
+</div>
+
+<script>
+const demoStudents=[
+{name:"Demo Student A",id:"DEMO-001",program:"Primary"},
+{name:"Demo Student B",id:"DEMO-002",program:"Standard"},
+{name:"Demo Student C",id:"DEMO-003",program:"Advanced"}
+];
+
+function renderStudents(query=""){
+const tbody=document.getElementById("studentRows");
+tbody.replaceChildren();
+demoStudents.filter(s=>
+(s.name+" "+s.id+" "+s.program)
+.toLowerCase().includes(query.toLowerCase())
+).forEach(s=>{
+const tr=document.createElement("tr");
+[s.name,s.id,s.program].forEach(value=>{
+const td=document.createElement("td");
+td.textContent=value;
+tr.appendChild(td);
+});
+const td=document.createElement("td");
+const span=document.createElement("span");
+span.className="tag";
+span.textContent="Demo";
+td.appendChild(span);
+tr.appendChild(td);
+tbody.appendChild(tr);
+});
+}
+
+document.querySelectorAll("nav button").forEach(button=>{
+button.addEventListener("click",()=>{
+document.querySelectorAll("main section")
+.forEach(section=>section.classList.add("hidden"));
+document.getElementById(button.dataset.page)
+.classList.remove("hidden");
+document.querySelectorAll("nav button")
+.forEach(b=>b.classList.remove("active"));
+button.classList.add("active");
+});
+});
+
+document.getElementById("search")
+.addEventListener("input",event=>
+renderStudents(event.target.value));
+renderStudents();
+</script>
 </body>
 </html>
