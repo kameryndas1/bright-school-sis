@@ -293,48 +293,34 @@ const SUPABASE_URL =
 
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_HQ5Xf6LSiOQ5K1unnYiJCg_Q4r5ERuF";
- 
+
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage
-    }
-  }
+  SUPABASE_PUBLISHABLE_KEY
 );
 
 console.log("Bright School SIS client initialized");
 </script>
  
-
-
 <script>
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const loginButton = document.getElementById("login-button");
 
-let checkingAccess = false;
-
-function showLogin(message = "") {
+function showLogin() {
   document.body.classList.remove(
     "auth-loading", "authenticated"
   );
   document.body.classList.add("login-required");
-  loginError.textContent = message;
 }
 
-function showDashboard(role) {
+function showDashboard(email) {
   document.body.classList.remove(
     "auth-loading", "login-required"
   );
   document.body.classList.add("authenticated");
 
   let logout = document.getElementById("logout-btn");
-
   if (!logout) {
     logout = document.createElement("button");
     logout.id = "logout-btn";
@@ -342,84 +328,28 @@ function showDashboard(role) {
     document.querySelector("header").appendChild(logout);
 
     logout.addEventListener("click", async () => {
-      const { error } = await supabaseClient.auth.signOut({
-        scope: "local"
-      });
-
+      const { error } = await supabaseClient.auth.signOut();
       if (error) {
         alert("Sign out failed: " + error.message);
         return;
       }
-
       showLogin();
     });
   }
 }
 
-async function verifyStaffAccess() {
-  if (checkingAccess) return;
-  checkingAccess = true;
-
-  // Never reveal the dashboard before verification.
-  document.body.classList.remove("authenticated");
-  document.body.classList.add("auth-loading");
-
-  try {
-    const { data: userData, error: userError } =
-      await supabaseClient.auth.getUser();
-
-    if (userError || !userData.user) {
-      showLogin();
-      return;
-    }
-
-    const { data: staff, error: roleError } =
-      await supabaseClient
-        .from("bright_staff_roles")
-        .select("role")
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-
-    if (roleError) {
-      throw new Error(
-        "Role verification failed: " + roleError.message
-      );
-    }
-
-    if (!staff ||
-        !["administrator", "teacher"].includes(staff.role)) {
-      await supabaseClient.auth.signOut({
-        scope: "local"
-      });
-
-      showLogin("Your account is not authorized for staff access.");
-      return;
-    }
-
-    showDashboard(staff.role);
-
-  } catch (error) {
-    showLogin(error.message || "Unable to verify access.");
-  } finally {
-    checkingAccess = false;
-  }
-}
-
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-
   loginError.textContent = "";
   loginButton.disabled = true;
   loginButton.textContent = "Signing in...";
 
+  const email = document.getElementById("staff-email").value;
+  const password =
+    document.getElementById("staff-password").value;
+
   try {
-    const email =
-      document.getElementById("staff-email").value;
-
-    const password =
-      document.getElementById("staff-password").value;
-
-    const { error } =
+    const { data, error } =
       await supabaseClient.auth.signInWithPassword({
         email,
         password
@@ -427,25 +357,43 @@ loginForm.addEventListener("submit", async (event) => {
 
     if (error) throw error;
 
+    if (!data.user) {
+      throw new Error("Authentication was not completed.");
+    }
+
     document.getElementById("staff-password").value = "";
-    await verifyStaffAccess();
+    showDashboard(data.user.email);
 
   } catch (error) {
-    showLogin(error.message);
+    loginError.textContent = error.message;
+    showLogin();
   } finally {
     loginButton.disabled = false;
     loginButton.textContent = "Sign In";
   }
 });
 
-supabaseClient.auth.onAuthStateChange((event) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_OUT") {
     showLogin();
   }
 });
 
-// Verify any existing browser session on page load.
-verifyStaffAccess();
+(async () => {
+  try {
+    const { data, error } =
+      await supabaseClient.auth.getUser();
+
+    if (error || !data.user) {
+      showLogin();
+    } else {
+      showDashboard(data.user.email);
+    }
+  } catch (error) {
+    loginError.textContent = "Unable to verify login.";
+    showLogin();
+  }
+})();
 </script>
 
 
