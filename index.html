@@ -237,33 +237,72 @@ Do not enter private student information.
 </div>
 
 <script>
-const demoStudents=[
-{name:"Demo Student A",id:"DEMO-001",program:"Primary"},
-{name:"Demo Student B",id:"DEMO-002",program:"Standard"},
-{name:"Demo Student C",id:"DEMO-003",program:"Advanced"}
-];
 
-function renderStudents(query=""){
-const tbody=document.getElementById("studentRows");
-tbody.replaceChildren();
-demoStudents.filter(s=>
-(s.name+" "+s.id+" "+s.program)
-.toLowerCase().includes(query.toLowerCase())
-).forEach(s=>{
-const tr=document.createElement("tr");
-[s.name,s.id,s.program].forEach(value=>{
-const td=document.createElement("td");
-td.textContent=value;
-tr.appendChild(td);
-});
-const td=document.createElement("td");
-const span=document.createElement("span");
-span.className="tag";
-span.textContent="Demo";
-td.appendChild(span);
-tr.appendChild(td);
-tbody.appendChild(tr);
-});
+let students = [];
+
+async function loadStudents() {
+  const tbody = document.getElementById("studentRows");
+
+  tbody.replaceChildren();
+
+  const message = document.createElement("tr");
+  const cell = document.createElement("td");
+  cell.colSpan = 4;
+  cell.textContent = "Loading student records...";
+  message.appendChild(cell);
+  tbody.appendChild(message);
+
+  const { data, error } = await supabaseClient
+    .from("students")
+    .select("id, student_number")
+    .limit(50);
+
+  if (error) {
+    cell.textContent = "Unable to load students: " +
+      error.message;
+    return;
+  }
+
+  students = data || [];
+  renderStudents();
+}
+
+function renderStudents(query = "") {
+  const tbody = document.getElementById("studentRows");
+  tbody.replaceChildren();
+
+  const filtered = students.filter(student =>
+    String(student.student_number || "")
+      .toLowerCase()
+      .includes(query.toLowerCase())
+  );
+
+  if (filtered.length === 0) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 4;
+    td.textContent = "No accessible students found.";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  filtered.forEach((student, index) => {
+    const tr = document.createElement("tr");
+
+    [
+      "Student Record " + (index + 1),
+      student.student_number || "—",
+      "Not displayed yet",
+      "Read-only"
+    ].forEach(value => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
 }
 
 document.querySelectorAll("nav button").forEach(button=>{
@@ -281,7 +320,7 @@ button.classList.add("active");
 document.getElementById("search")
 .addEventListener("input",event=>
 renderStudents(event.target.value));
-renderStudents();
+loadStudents();
 </script>
 
 <!-- Supabase JavaScript Client -->
