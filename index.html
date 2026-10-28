@@ -213,5 +213,23 @@ document.getElementById("search")
 renderStudents(event.target.value));
 renderStudents();
 </script>
+
+<!-- Supabase JavaScript Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL =
+  "https://afxiygaaexarciirqgai.supabase.co/rest/v1/";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_HQ5Xf6LSiOQ5K1unnYiJCg_Q4r5ERuF";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+console.log("Bright School SIS client initialized");
+</script>
 </body>
 </html>
