@@ -310,17 +310,6 @@ const supabaseClient = window.supabase.createClient(
 console.log("Bright School SIS client initialized");
 </script>
  
-<script>
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const loginButton = document.getElementById("login-button");
-
-function showLogin() {
-  document.body.classList.remove(
-    "auth-loading", "authenticated"
-  );
-  document.body.classList.add("login-required");
-}
 
 
 <script>
@@ -457,84 +446,6 @@ supabaseClient.auth.onAuthStateChange((event) => {
 
 // Verify any existing browser session on page load.
 verifyStaffAccess();
-</script>
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  loginError.textContent = "";
-  loginButton.disabled = true;
-  loginButton.textContent = "Signing in...";
-
-  const email = document.getElementById("staff-email").value;
-  const password =
-    document.getElementById("staff-password").value;
-
-  try {
-    const { data, error } =
-      await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-      });
-
-    if (error) throw error;
-
-    if (!data.user) {
-      throw new Error("Authentication was not completed.");
-    }
-
-    document.getElementById("staff-password").value = "";
-    showDashboard(data.user.email);
-
-  } catch (error) {
-    loginError.textContent = error.message;
-    showLogin();
-  } finally {
-    loginButton.disabled = false;
-    loginButton.textContent = "Sign In";
-  }
-});
-
-supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_OUT") {
-    showLogin();
-  }
-});
-
-
-(async function restoreLogin() {
-  try {
-    // Check for a saved browser session.
-    const { data: sessionData, error: sessionError } =
-      await supabaseClient.auth.getSession();
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-    if (!sessionData.session) {
-      showLogin("No saved session found. Please sign in.");
-      return;
-    }
-
-    // Verify the identity with Supabase Auth.
-    const { data: userData, error: userError } =
-      await supabaseClient.auth.getUser();
-
-    if (userError || !userData.user) {
-      showLogin("Saved session could not be verified.");
-      return;
-    }
-
-    // Temporary demo-only dashboard access.
-    // Staff role authorization comes next.
-    showDashboard(userData.user.email);
-
-  } catch (error) {
-    showLogin(
-      "Session restoration failed: " + error.message
-    );
-  }
-})();
 </script>
 
 
