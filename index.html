@@ -293,10 +293,18 @@ const SUPABASE_URL =
 
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_HQ5Xf6LSiOQ5K1unnYiJCg_Q4r5ERuF";
-
+ 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage
+    }
+  }
 );
 
 console.log("Bright School SIS client initialized");
@@ -379,19 +387,39 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   }
 });
 
-(async () => {
+
+(async function restoreLogin() {
   try {
-    const { data, error } =
+    // Check for a saved browser session.
+    const { data: sessionData, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError) {
+      throw sessionError;
+    }
+
+    if (!sessionData.session) {
+      showLogin("No saved session found. Please sign in.");
+      return;
+    }
+
+    // Verify the identity with Supabase Auth.
+    const { data: userData, error: userError } =
       await supabaseClient.auth.getUser();
 
-    if (error || !data.user) {
-      showLogin();
-    } else {
-      showDashboard(data.user.email);
+    if (userError || !userData.user) {
+      showLogin("Saved session could not be verified.");
+      return;
     }
+
+    // Temporary demo-only dashboard access.
+    // Staff role authorization comes next.
+    showDashboard(userData.user.email);
+
   } catch (error) {
-    loginError.textContent = "Unable to verify login.";
-    showLogin();
+    showLogin(
+      "Session restoration failed: " + error.message
+    );
   }
 })();
 </script>
