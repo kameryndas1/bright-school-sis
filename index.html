@@ -231,5 +231,50 @@ const supabaseClient = window.supabase.createClient(
 
 console.log("Bright School SIS client initialized");
 </script>
+
+<div id="connection-test" style="
+  position:fixed;
+  bottom:16px;
+  right:16px;
+  background:#173b70;
+  color:white;
+  padding:12px;
+  border-radius:8px;
+  font:14px Arial,sans-serif;
+  z-index:9999;
+">
+  Checking Supabase connection...
+</div>
+
+<script>
+(async function testSupabaseConnection() {
+  const status = document.getElementById(
+    "connection-test"
+  );
+
+  try {
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/settings",
+      {
+        headers: {
+          "apikey": SUPABASE_PUBLISHABLE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    status.textContent = "✓ Supabase connection working";
+    status.style.background = "#18743b";
+
+  } catch (error) {
+    status.textContent =
+      "Supabase connection failed: " + error.message;
+    status.style.background = "#a12626";
+  }
+})();
+</script>
 </body>
 </html>
