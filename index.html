@@ -322,13 +322,30 @@ function showLogin() {
   document.body.classList.add("login-required");
 }
 
-function showDashboard(email) {
+
+<script>
+const loginForm = document.getElementById("login-form");
+const loginError = document.getElementById("login-error");
+const loginButton = document.getElementById("login-button");
+
+let checkingAccess = false;
+
+function showLogin(message = "") {
+  document.body.classList.remove(
+    "auth-loading", "authenticated"
+  );
+  document.body.classList.add("login-required");
+  loginError.textContent = message;
+}
+
+function showDashboard(role) {
   document.body.classList.remove(
     "auth-loading", "login-required"
   );
   document.body.classList.add("authenticated");
 
   let logout = document.getElementById("logout-btn");
+
   if (!logout) {
     logout = document.createElement("button");
     logout.id = "logout-btn";
@@ -336,15 +353,111 @@ function showDashboard(email) {
     document.querySelector("header").appendChild(logout);
 
     logout.addEventListener("click", async () => {
-      const { error } = await supabaseClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut({
+        scope: "local"
+      });
+
       if (error) {
         alert("Sign out failed: " + error.message);
         return;
       }
+
       showLogin();
     });
   }
 }
+
+async function verifyStaffAccess() {
+  if (checkingAccess) return;
+  checkingAccess = true;
+
+  // Never reveal the dashboard before verification.
+  document.body.classList.remove("authenticated");
+  document.body.classList.add("auth-loading");
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      showLogin();
+      return;
+    }
+
+    const { data: staff, error: roleError } =
+      await supabaseClient
+        .from("bright_staff_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+
+    if (roleError) {
+      throw new Error(
+        "Role verification failed: " + roleError.message
+      );
+    }
+
+    if (!staff ||
+        !["administrator", "teacher"].includes(staff.role)) {
+      await supabaseClient.auth.signOut({
+        scope: "local"
+      });
+
+      showLogin("Your account is not authorized for staff access.");
+      return;
+    }
+
+    showDashboard(staff.role);
+
+  } catch (error) {
+    showLogin(error.message || "Unable to verify access.");
+  } finally {
+    checkingAccess = false;
+  }
+}
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  loginError.textContent = "";
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in...";
+
+  try {
+    const email =
+      document.getElementById("staff-email").value;
+
+    const password =
+      document.getElementById("staff-password").value;
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) throw error;
+
+    document.getElementById("staff-password").value = "";
+    await verifyStaffAccess();
+
+  } catch (error) {
+    showLogin(error.message);
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Sign In";
+  }
+});
+
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") {
+    showLogin();
+  }
+});
+
+// Verify any existing browser session on page load.
+verifyStaffAccess();
+</script>
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
