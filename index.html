@@ -319,7 +319,8 @@ button.classList.add("active");
 
 document.getElementById("search")
 .addEventListener("input",event=>
-renderStudents(event.target.value));
+renderStudents(event.target.value)
+);
 loadStudents();
 </script>
 
@@ -454,8 +455,8 @@ async function verifyStaffAccess() {
     checkingAccess = false;
   }
 }
-</script>
-loginForm.addEventListener("submit", async (event) => {
+
+ loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   loginError.textContent = "";
@@ -498,6 +499,7 @@ supabaseClient.auth.onAuthStateChange((event) => {
 verifyStaffAccess();
 </script>
 
+<script>
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
