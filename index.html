@@ -237,7 +237,6 @@ Do not enter private student information.
 </div>
 
 <script>
-
 let students = [];
 
 async function loadStudents() {
@@ -319,9 +318,7 @@ button.classList.add("active");
 
 document.getElementById("search")
 .addEventListener("input",event=>
-renderStudents(event.target.value)
-);
-loadStudents();
+renderStudents(event.target.value));
 </script>
 
 <!-- Supabase JavaScript Client -->
@@ -383,7 +380,8 @@ function showDashboard(role) {
     "auth-loading", "login-required"
   );
   document.body.classList.add("authenticated");
-
+loadStudents();
+ 
   let logout = document.getElementById("logout-btn");
 
   if (!logout) {
