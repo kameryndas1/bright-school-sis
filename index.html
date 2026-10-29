@@ -319,6 +319,17 @@ function showDashboard(email) {
     "auth-loading", "login-required"
   );
   document.body.classList.add("authenticated");
+ 
+  // Load the Student Directory after staff access is verified.
+  if (typeof window.loadStudentDirectory === "function") {
+    window.loadStudentDirectory();
+  } else {
+    window.addEventListener("load", () => {
+      if (document.body.classList.contains("authenticated")) {
+        window.loadStudentDirectory?.();
+      }
+    }, { once: true });
+  }
 
   let logout = document.getElementById("logout-btn");
   if (!logout) {
