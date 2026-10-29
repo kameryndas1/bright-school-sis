@@ -314,14 +314,37 @@ console.log("Student profiles module ready");
 
 async function setupStudentEditor() {
   const section = document.getElementById("students");
+ // Temporary read-only administrator diagnostic
+ let diagnostic = document.getElementById("admin-diagnostic");
+
+  if (!diagnostic && section) {
+    diagnostic = document.createElement("p");
+    diagnostic.id = "admin-diagnostic";
+    diagnostic.setAttribute("role", "status");
+    diagnostic.style.cssText =
+      "padding:12px;background:#eef2ff;color:#173b70;" +
+      "border-radius:8px;margin:12px 0";
+    section.prepend(diagnostic);
+  }
+
+  const reportAdminCheck = message => {
+    console.log("Student editor:", message);
+    if (diagnostic) diagnostic.textContent = message;
+  };
+
+  reportAdminCheck("Checking student administration access...");
+
   if (!section ||
       !document.body.classList.contains("authenticated")) return;
 
   const { data: userData, error: userError } =
     await supabaseClient.auth.getUser();
 
-  if (userError || !userData.user) return;
-
+  if (userError || !userData?.user) {
+   reportAdminChecl("Authentication check failed.");
+   return;
+  }
+   
   const uid = userData.user.id;
 
   const [rolesResult, staffResult] = await Promise.all([
@@ -332,14 +355,28 @@ async function setupStudentEditor() {
       .eq("auth_user_id", uid)
   ]);
 
-  if (rolesResult.error || staffResult.error) return;
+  if (rolesResult.error || staffResult.error) {
+   reportAdminCheck("Staff permission query failed.");
+   return;
+  }
 
   const adminSchools = (staffResult.data || []).filter(
     s => s.role === "admin" && s.active === true
   );
 
-  if (rolesResult.data?.role !== "administrator" ||
-      adminSchools.length !== 1) return;
+  
+  if (rolesResult.data?.role !== "administrator") {
+    reportAdminCheck("Administrator login role not verified.");
+    return;
+  }
+
+  if (adminSchools.length !== 1) {
+    reportAdminCheck("School administrator record not available.");
+    return;
+  }
+
+  reportAdminCheck("Administrator checks passed.");
+
 
   const schoolId = adminSchools[0].school_id;
   document.getElementById("student-editor")?.remove();
