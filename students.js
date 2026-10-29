@@ -259,7 +259,7 @@ window.loadStudentDirectory = async function () {
     const { data, error } = await supabaseClient
       .from("students")
       .select(
-        "id,student_number,first_name,last_name," +
+        "id,school_id,student_number,first_name,last_name," +
         "preferred_name,grade_level,academic_level," +
         "enrollment_status"
       )
@@ -278,7 +278,9 @@ window.loadStudentDirectory = async function () {
     renderStudentDirectory(
       document.getElementById("search")?.value || ""
     );
-
+   
+await setupStudentEditor();
+   
   } catch (error) {
     console.error("Student directory error:", error);
     showStudentMessage("Unable to load students.");
@@ -309,4 +311,231 @@ supabaseClient.auth.onAuthStateChange(event => {
 });
 
 console.log("Student profiles module ready");
+
+async function setupStudentEditor() {
+  const section = document.getElementById("students");
+  if (!section ||
+      !document.body.classList.contains("authenticated")) return;
+
+  const { data: userData, error: userError } =
+    await supabaseClient.auth.getUser();
+
+  if (userError || !userData.user) return;
+
+  const uid = userData.user.id;
+
+  const [rolesResult, staffResult] = await Promise.all([
+    supabaseClient.from("bright_staff_roles")
+      .select("role").eq("user_id", uid).maybeSingle(),
+    supabaseClient.from("staff")
+      .select("school_id,role,active")
+      .eq("auth_user_id", uid)
+  ]);
+
+  if (rolesResult.error || staffResult.error) return;
+
+  const adminSchools = (staffResult.data || []).filter(
+    s => s.role === "admin" && s.active === true
+  );
+
+  if (rolesResult.data?.role !== "administrator" ||
+      adminSchools.length !== 1) return;
+
+  const schoolId = adminSchools[0].school_id;
+  document.getElementById("student-editor")?.remove();
+
+  const panel = document.createElement("section");
+  panel.id = "student-editor";
+  panel.style.cssText =
+    "background:white;padding:20px;margin:20px 0;" +
+    "border:1px solid #ddd;border-radius:12px";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Student Administration";
+  panel.appendChild(heading);
+
+  const form = document.createElement("form");
+  form.style.cssText =
+    "display:grid;gap:12px;max-width:480px";
+
+  function field(label, name, type = "text") {
+    const wrapper = document.createElement("label");
+    wrapper.textContent = label;
+    const input = document.createElement("input");
+    input.name = name;
+    input.type = type;
+    input.style.cssText =
+      "display:block;width:100%;padding:10px;" +
+      "box-sizing:border-box";
+    if (type !== "number") input.maxLength = 100;
+    wrapper.appendChild(input);
+    form.appendChild(wrapper);
+    return input;
+  }
+
+  function choice(label, name, options) {
+    const wrapper = document.createElement("label");
+    wrapper.textContent = label;
+    const select = document.createElement("select");
+    select.name = name;
+    select.style.cssText =
+      "display:block;width:100%;padding:10px";
+    options.forEach(value => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    });
+    wrapper.appendChild(select);
+    form.appendChild(wrapper);
+    return select;
+  }
+
+  const recordSelect = choice(
+    "Action", "record", ["New Student"]
+  );
+
+  function refreshOptions() {
+    const previous = recordSelect.value;
+    recordSelect.replaceChildren();
+
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "New Student";
+    recordSelect.appendChild(blank);
+
+    studentRecords
+      .filter(s => s.school_id === schoolId)
+      .forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = getStudentName(s);
+        recordSelect.appendChild(opt);
+      });
+
+    recordSelect.value = previous || "";
+  }
+
+  const number = field("Student Number", "student_number");
+  const first = field("First Name", "first_name");
+  const last = field("Last Name", "last_name");
+  const preferred = field("Preferred Name", "preferred_name");
+  const grade = field("Grade Level", "grade_level", "number");
+  grade.min = "0";
+  grade.max = "12";
+
+  const level = choice("Academic Level", "academic_level",
+    ["Primary", "Standard", "Advanced"]);
+
+  const status = choice("Enrollment Status",
+    "enrollment_status",
+    ["active", "withdrawn", "graduated"]);
+
+  first.required = true;
+  last.required = true;
+  grade.required = true;
+
+  recordSelect.addEventListener("change", () => {
+    const student = studentRecords.find(
+      s => s.id === recordSelect.value
+    );
+
+    number.value = student?.student_number || "";
+    number.readOnly = !!student;
+    first.value = student?.first_name || "";
+    last.value = student?.last_name || "";
+    preferred.value = student?.preferred_name || "";
+    grade.value = student?.grade_level ?? 5;
+    level.value = student?.academic_level || "Standard";
+    status.value = student?.enrollment_status || "active";
+    number.required = !student;
+  });
+
+  const message = document.createElement("p");
+  message.setAttribute("role", "status");
+
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.textContent = "Save Student";
+  save.style.cssText =
+    "padding:12px;background:#173b70;color:white;" +
+    "border:0;border-radius:8px;cursor:pointer";
+
+  form.append(save, message);
+  panel.appendChild(form);
+  section.prepend(panel);
+
+  refreshOptions();
+  recordSelect.dispatchEvent(new Event("change"));
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    save.disabled = true;
+    message.textContent = "Saving...";
+
+    const existing = studentRecords.find(
+      s => s.id === recordSelect.value
+    );
+
+    const values = {
+      first_name: first.value.trim(),
+      last_name: last.value.trim(),
+      preferred_name: preferred.value.trim() || null,
+      grade_level: Number(grade.value),
+      academic_level: level.value,
+      enrollment_status: status.value
+    };
+
+    try {
+      if (!values.first_name || !values.last_name ||
+          !Number.isInteger(values.grade_level) ||
+          values.grade_level < 0 ||
+          values.grade_level > 12) {
+        throw new Error("Check the required fields.");
+      }
+
+      let result;
+
+      if (existing) {
+        result = await supabaseClient
+          .from("students")
+          .update(values)
+          .eq("id", existing.id)
+          .eq("school_id", schoolId)
+          .select("id")
+          .single();
+      } else {
+        const studentNumber = number.value.trim();
+
+        if (!studentNumber) {
+          throw new Error("Student number is required.");
+        }
+
+        result = await supabaseClient
+          .from("students")
+          .insert({
+            ...values,
+            school_id: schoolId,
+            student_number: studentNumber
+          })
+          .select("id")
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
+      message.textContent = "Student saved successfully.";
+      await window.loadStudentDirectory();
+      refreshOptions();
+
+    } catch (error) {
+      message.textContent = "Save failed: " + error.message;
+    } finally {
+      save.disabled = false;
+    }
+  });
+}
+
+
 
