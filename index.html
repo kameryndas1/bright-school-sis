@@ -233,12 +233,54 @@ body.auth-loading #login-screen {
 </section>
 
 <section id="scheduling" class="hidden">
-<h1>Scheduling</h1>
-<div class="panel">
-<h3>Class Scheduling</h3>
-<p>Subjects, class sections, and teacher assignments will appear here.</p>
-</div>
+  <h1>Scheduling</h1>
+  <p class="subtitle">
+    Manage Valadia Academy class sections and teachers.
+  </p>
+
+  <div class="panel">
+    <h3>Teacher Class Assignments</h3>
+    <p id="assignment-message" role="status">
+      Select Scheduling to load assignments.
+    </p>
+
+    <div id="assignment-admin-controls" hidden>
+      <form id="assignment-form">
+        <label for="assignment-teacher">
+          Select Teacher
+        </label>
+        <select id="assignment-teacher" required>
+          <option value="">Choose a teacher</option>
+        </select>
+
+        <label for="assignment-section">
+          Select Available Class
+        </label>
+        <select id="assignment-section" required>
+          <option value="">Choose an unassigned class</option>
+        </select>
+
+        <button type="submit" id="assignment-save">
+          Save Assignment
+        </button>
+      </form>
+    </div>
+
+    <h3>Current Class Assignments</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Class Section</th>
+          <th>Level</th>
+          <th>Teacher</th>
+          <th>Students</th>
+        </tr>
+      </thead>
+      <tbody id="assignment-rows"></tbody>
+    </table>
+  </div>
 </section>
+
 
 <section id="reports" class="hidden">
 <h1>Reports</h1>
