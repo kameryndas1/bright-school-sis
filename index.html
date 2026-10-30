@@ -182,11 +182,38 @@ body.auth-loading #login-screen {
 </section>
 
 <section id="staff" class="hidden">
-<h1>Staff Directory</h1>
-<div class="panel">
-<h3>Staff Management</h3>
-<p>Teacher profiles and assignments will be added here.</p>
-</div>
+  <h1>Staff Directory</h1>
+  <p class="subtitle">
+    View authorized Valadia Academy staff records.
+  </p>
+
+  <div class="panel">
+    <h3>Staff Management</h3>
+
+    <input
+      type="search"
+      id="staffSearch"
+      placeholder="Search staff..."
+      aria-label="Search staff"
+    >
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Position</th>
+          <th>Department</th>
+          <th>Role</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="staffRows">
+        <tr>
+          <td colspan="5">Loading staff...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section id="grades" class="hidden">
