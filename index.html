@@ -307,7 +307,11 @@ const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const loginButton = document.getElementById("login-button");
 
-function showLogin() {
+function showLogin() { 
+ 
+  document.getElementById("student-editor")?.remove();
+  document.getElementById("admin-diagnostic")?.remove();
+
   document.body.classList.remove(
     "auth-loading", "authenticated"
   );
@@ -315,6 +319,10 @@ function showLogin() {
 }
 
 function showDashboard(email) {
+ 
+  document.getElementById("student-editor")?.remove();
+  document.getElementById("admin-diagnostic")?.remove();
+
   document.body.classList.remove(
     "auth-loading", "login-required"
   );
@@ -349,6 +357,101 @@ function showDashboard(email) {
   }
 }
 
+ 
+async function verifyStaffAccess() {
+  const { data: authData, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !authData?.user) {
+    throw new Error("Unable to verify your account.");
+  }
+
+  const uid = authData.user.id;
+
+  const [roleResult, staffResult] = await Promise.all([
+    supabaseClient
+      .from("bright_staff_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .maybeSingle(),
+
+    supabaseClient
+      .from("staff")
+      .select("role,active")
+      .eq("auth_user_id", uid)
+      .eq("active", true)
+  ]);
+
+  if (roleResult.error || staffResult.error) {
+    throw new Error("Unable to verify staff access.");
+  }
+
+  const loginRole = roleResult.data?.role;
+  const requiredSchoolRole =
+    loginRole === "administrator" ? "admin" :
+    loginRole === "teacher" ? "teacher" : null;
+
+  const authorized = requiredSchoolRole &&
+    (staffResult.data || []).some(
+      staff => staff.role === requiredSchoolRole
+    );
+
+  if (!authorized) {
+    throw new Error(
+      "Access denied: active school staff account required."
+    );
+  }
+
+  return authData.user;
+}
+
+async function verifyStaffAccess() {
+  const { data: authData, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !authData?.user) {
+    throw new Error("Unable to verify your account.");
+  }
+
+  const uid = authData.user.id;
+
+  const [roleResult, staffResult] = await Promise.all([
+    supabaseClient
+      .from("bright_staff_roles")
+      .select("role")
+      .eq("user_id", uid)
+      .maybeSingle(),
+
+    supabaseClient
+      .from("staff")
+      .select("role,active")
+      .eq("auth_user_id", uid)
+      .eq("active", true)
+  ]);
+
+  if (roleResult.error || staffResult.error) {
+    throw new Error("Unable to verify staff access.");
+  }
+
+  const loginRole = roleResult.data?.role;
+  const requiredSchoolRole =
+    loginRole === "administrator" ? "admin" :
+    loginRole === "teacher" ? "teacher" : null;
+
+  const authorized = requiredSchoolRole &&
+    (staffResult.data || []).some(
+      staff => staff.role === requiredSchoolRole
+    );
+
+  if (!authorized) {
+    throw new Error(
+      "Access denied: active school staff account required."
+    );
+  }
+
+  return authData.user;
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginError.textContent = "";
@@ -372,10 +475,15 @@ loginForm.addEventListener("submit", async (event) => {
       throw new Error("Authentication was not completed.");
     }
 
-    document.getElementById("staff-password").value = "";
-    showDashboard(data.user.email);
+    
+const verifiedUser = await verifyStaffAccess();
+
+document.getElementById("staff-password").value = "";
+showDashboard(verifiedUser.email);
+
 
   } catch (error) {
+   await supabaseClient.auth.signOut();
     loginError.textContent = error.message;
     showLogin();
   } finally {
@@ -395,11 +503,19 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     const { data, error } =
       await supabaseClient.auth.getUser();
 
-    if (error || !data.user) {
-      showLogin();
-    } else {
-      showDashboard(data.user.email);
-    }
+if (error || !data.user) {
+  showLogin();
+} else {
+  try {
+    const verifiedUser = await verifyStaffAccess();
+    showDashboard(verifiedUser.email);
+  } catch (accessError) {
+    await supabaseClient.auth.signOut();
+    showLogin();
+    loginError.textContent = accessError.message;
+  }
+}
+
   } catch (error) {
     loginError.textContent = "Unable to verify login.";
     showLogin();
