@@ -23,6 +23,80 @@ function showStaffMessage(message) {
   tbody.appendChild(row);
 }
 
+
+function showStaffProfile(staffId) {
+  const staff = staffRecords.find(
+    record => record.id === staffId
+  );
+
+  if (!staff) return;
+
+  const section = document.getElementById("staff");
+  if (!section) return;
+
+  let profile = document.getElementById("staff-profile");
+
+  if (!profile) {
+    profile = document.createElement("div");
+    profile.id = "staff-profile";
+    profile.className = "panel";
+    section.appendChild(profile);
+  }
+
+  profile.replaceChildren();
+
+  const heading = document.createElement("h2");
+  heading.textContent = [
+    staff.preferred_name || staff.first_name,
+    staff.last_name
+  ].filter(Boolean).join(" ");
+
+  const subtitle = document.createElement("p");
+  subtitle.textContent =
+    "Staff Profile — Valadia Academy";
+
+  profile.append(heading, subtitle);
+
+  const details = [
+    ["Position",
+      staff.job_title ||
+      (staff.role === "admin"
+        ? "Administrator" : "Teacher")],
+    ["Department", staff.department || "Not specified"],
+    ["School Role",
+      staff.role === "admin"
+        ? "Administrator"
+        : staff.role === "teacher"
+          ? "Teacher" : staff.role],
+    ["Status", staff.active ? "Active" : "Inactive"]
+  ];
+
+  details.forEach(([label, value]) => {
+    const paragraph = document.createElement("p");
+    const strong = document.createElement("strong");
+
+    strong.textContent = label + ": ";
+    paragraph.append(strong, document.createTextNode(value));
+
+    profile.appendChild(paragraph);
+  });
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "Close Profile";
+
+  closeButton.style.cssText =
+    "padding:10px 16px;background:#173b70;" +
+    "color:white;border:0;border-radius:7px;" +
+    "cursor:pointer;margin-top:10px";
+
+  closeButton.addEventListener("click", () => {
+    profile.remove();
+  });
+
+  profile.appendChild(closeButton);
+}
+
 function renderStaffDirectory(query = "") {
   const tbody = document.getElementById("staffRows");
   if (!tbody) return;
@@ -79,11 +153,31 @@ function renderStaffDirectory(query = "") {
       staff.active ? "Active" : "Inactive"
     ];
 
-    values.forEach(value => {
-      const cell = document.createElement("td");
-      cell.textContent = value ?? "—";
-      row.appendChild(cell);
+values.forEach((value, index) => {
+  const cell = document.createElement("td");
+
+  if (index === 0) {
+    const nameButton = document.createElement("button");
+
+    nameButton.type = "button";
+    nameButton.textContent = value ?? "Unnamed Staff";
+
+    nameButton.style.cssText =
+      "border:0;background:none;color:#173b70;" +
+      "font-weight:bold;text-decoration:underline;" +
+      "cursor:pointer;padding:0;text-align:left";
+
+    nameButton.addEventListener("click", () => {
+      showStaffProfile(staff.id);
     });
+
+    cell.appendChild(nameButton);
+  } else {
+    cell.textContent = value ?? "—";
+  }
+
+  row.appendChild(cell);
+});
 
     tbody.appendChild(row);
   });
@@ -96,8 +190,9 @@ window.loadStaffDirectory = async function () {
 
   const request = ++staffRequest;
 
-  staffRecords = [];
-  showStaffMessage("Loading staff...");
+staffRecords = [];
+document.getElementById("staff-profile")?.remove();
+showStaffMessage("Loading staff...");
 
   try {
     const { data: userData, error: authError } =
@@ -158,6 +253,7 @@ document.querySelector(
 // Clear cached staff information on sign-out.
 supabaseClient.auth.onAuthStateChange(event => {
   if (event === "SIGNED_OUT") {
+    document.getElementById("staff-profile")?.remove();
     staffRequest++;
     staffRecords = [];
 
