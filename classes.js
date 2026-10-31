@@ -26,6 +26,176 @@ function clearClassDirectory(message) {
   showClassDirectoryMessage(message);
 }
 
+
+async function setupRosterManagement(
+  sectionId, panel, students, userId, request
+) {
+  const current = async () => {
+    const { data, error } =
+      await supabaseClient.auth.getUser();
+
+    return !error &&
+      data?.user?.id === userId &&
+      request === classDirectoryRequest &&
+      panel.isConnected &&
+      document.body.classList.contains("authenticated");
+  };
+
+  if (!(await current())) return;
+
+  const { data: candidates, error } =
+    await supabaseClient.rpc(
+      "bright_roster_candidates",
+      { p_section_id: sectionId }
+    );
+
+  if (!(await current())) return;
+
+  if (error) {
+    // A teacher or unauthorized user must not
+    // receive administrator roster controls.
+    return;
+  }
+
+  const controls = document.createElement("div");
+  controls.id = "roster-management";
+  controls.className = "panel";
+
+  const heading = document.createElement("h4");
+  heading.textContent = "Roster Administration";
+
+  const label = document.createElement("label");
+  label.htmlFor = "roster-student-select";
+  label.textContent = "Enroll Student";
+
+  const select = document.createElement("select");
+  select.id = "roster-student-select";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Select an eligible student";
+  select.appendChild(placeholder);
+
+  (candidates || []).forEach(student => {
+    const option = document.createElement("option");
+    option.value = student.student_id;
+    option.textContent =
+      `${student.student_name} — Grade ${student.grade_level}`;
+    select.appendChild(option);
+  });
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.textContent = "Enroll Student";
+  addButton.disabled = !candidates?.length;
+
+  const status = document.createElement("p");
+  status.setAttribute("role", "status");
+
+  controls.append(heading, label, select, addButton);
+
+  const removalHeading = document.createElement("h4");
+  removalHeading.textContent = "Manage Current Enrollments";
+  controls.appendChild(removalHeading);
+
+  const removalList = document.createElement("div");
+
+  students.forEach(student => {
+    const row = document.createElement("div");
+    row.style.cssText =
+      "display:flex;gap:12px;align-items:center;" +
+      "justify-content:space-between;margin:10px 0";
+
+    const name = document.createElement("span");
+    name.textContent =
+      `${student.first_name} ${student.last_name}`;
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.textContent = "Remove Enrollment";
+
+    removeButton.addEventListener("click", async () => {
+      if (!window.confirm(
+        `Remove ${name.textContent} from this class?`
+      )) return;
+
+      if (!(await current())) return;
+
+      removeButton.disabled = true;
+      status.textContent = "Removing enrollment...";
+
+      try {
+        const { error: removeError } =
+          await supabaseClient.rpc(
+            "bright_remove_enrollment",
+            {
+              p_student_id: student.id,
+              p_section_id: sectionId
+            }
+          );
+
+        if (removeError) throw removeError;
+        if (!(await current())) return;
+
+        await window.loadClassDirectory();
+        await showClassDetails(sectionId);
+
+      } catch (err) {
+        if (await current()) {
+          status.textContent =
+            err.message || "Removal failed.";
+          removeButton.disabled = false;
+        }
+      }
+    });
+
+    row.append(name, removeButton);
+    removalList.appendChild(row);
+  });
+
+  if (!students.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No students currently displayed.";
+    removalList.appendChild(empty);
+  }
+
+  controls.append(removalList, status);
+
+  addButton.addEventListener("click", async () => {
+    const studentId = select.value;
+    if (!studentId || !(await current())) return;
+
+    addButton.disabled = true;
+    status.textContent = "Enrolling student...";
+
+    try {
+      const { error: addError } =
+        await supabaseClient.rpc(
+          "bright_enroll_student",
+          {
+            p_student_id: studentId,
+            p_section_id: sectionId
+          }
+        );
+
+      if (addError) throw addError;
+      if (!(await current())) return;
+
+      await window.loadClassDirectory();
+      await showClassDetails(sectionId);
+
+    } catch (err) {
+      if (await current()) {
+        status.textContent =
+          err.message || "Enrollment failed.";
+        addButton.disabled = false;
+      }
+    }
+  });
+
+  if (await current()) panel.appendChild(controls);
+}
+
 async function showClassDetails(sectionId) {
   const section = classDirectoryRecords.find(
     item =>
@@ -204,7 +374,14 @@ async function showClassDetails(sectionId) {
         "Some enrolled student records may be restricted by access policies.";
       panel.appendChild(note);
     }
-
+    await setupRosterManagement(
+  sectionId,
+  panel,
+  students,
+  userId,
+  request
+);
+    
   } catch (error) {
     if (
       request !== classDirectoryRequest ||
