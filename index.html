@@ -280,7 +280,38 @@ body.auth-loading #login-screen {
     </table>
   </div>
 </section>
+ 
+<div class="panel" id="class-directory-panel">
+  <h3>Class Directory</h3>
+  <p>Browse Valadia Academy's class sections.</p>
 
+  <label for="class-level-filter">
+    Filter by Academic Level
+  </label>
+  <select id="class-level-filter">
+    <option value="All">All Levels</option>
+    <option value="Primary">Primary</option>
+    <option value="Standard">Standard</option>
+    <option value="Advanced">Advanced</option>
+  </select>
+
+  <p id="class-directory-status" role="status">
+    Open Scheduling to load classes.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Class Section</th>
+        <th>Level</th>
+        <th>Teacher</th>
+        <th>Students</th>
+      </tr>
+    </thead>
+    <tbody id="class-directory-rows"></tbody>
+  </table>
+</div>
+</section>
 
 <section id="reports" class="hidden">
 <h1>Reports</h1>
